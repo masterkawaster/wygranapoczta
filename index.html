@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wygrana Poczta - Gra</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #eee;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #f7d94e, #f0a500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            letter-spacing: 2px;
+        }
+
+        #hud {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        #hud span {
+            background: rgba(255,255,255,0.08);
+            padding: 6px 18px;
+            border-radius: 8px;
+        }
+
+        #hud .label {
+            color: #aaa;
+        }
+
+        #hud .value {
+            color: #f7d94e;
+            font-weight: bold;
+        }
+
+        canvas {
+            border: 3px solid #f0a500;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(240, 165, 0, 0.3);
+            cursor: pointer;
+        }
+
+        #math-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #math-overlay.active {
+            display: flex;
+        }
+
+        #math-box {
+            background: linear-gradient(135deg, #16213e, #1a1a2e);
+            border: 2px solid #f0a500;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(240, 165, 0, 0.4);
+            min-width: 340px;
+        }
+
+        #math-box h2 {
+            color: #f7d94e;
+            margin-bottom: 10px;
+            font-size: 1.4rem;
+        }
+
+        #math-question {
+            font-size: 2.5rem;
+            color: #fff;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        #math-input {
+            font-size: 1.8rem;
+            padding: 10px 20px;
+            border: 2px solid #f0a500;
+            border-radius: 8px;
+            background: #0f3460;
+            color: #fff;
+            text-align: center;
+            width: 160px;
+            outline: none;
+        }
+
+        #math-input:focus {
+            border-color: #f7d94e;
+            box-shadow: 0 0 10px rgba(247, 217, 78, 0.4);
+        }
+
+        #math-hint {
+            margin-top: 12px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        #math-feedback {
+            margin-top: 10px;
+            font-size: 1.1rem;
+            min-height: 24px;
+        }
+
+        #game-over-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.82);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #game-over-overlay.active {
+            display: flex;
+        }
+
+        #game-over-box {
+            background: linear-gradient(135deg, #3d0000, #1a1a2e);
+            border: 2px solid #e74c3c;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(231, 76, 60, 0.5);
+        }
+
+        #game-over-box h2 {
+            color: #e74c3c;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        #game-over-score {
+            font-size: 1.4rem;
+            color: #f7d94e;
+            margin: 10px 0;
+        }
+
+        #restart-btn, #start-btn {
+            margin-top: 20px;
+            padding: 12px 36px;
+            font-size: 1.2rem;
+            border: 2px solid #f0a500;
+            background: #0f3460;
+            color: #f7d94e;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #restart-btn:hover, #start-btn:hover {
+            background: #f0a500;
+            color: #1a1a2e;
+        }
+
+        #win-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.82);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #win-overlay.active {
+            display: flex;
+        }
+
+        #win-box {
+            background: linear-gradient(135deg, #0a3d00, #1a1a2e);
+            border: 2px solid #2ecc71;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(46, 204, 113, 0.5);
+        }
+
+        #win-box h2 {
+            color: #2ecc71;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        #controls-info {
+            margin-top: 10px;
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        #level-display {
+            color: #2ecc71;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wygrana Poczta</h1>
+    <div id="hud">
+        <span><span class="label">Punkty: </span><span class="value" id="score">0</span></span>
+        <span><span class="label">Najlepszy: </span><span class="value" id="best-score">0</span></span>
+        <span><span class="label">Poziom: </span><span class="value" id="level-display">1</span></span>
+        <span><span class="label">Monety: </span><span class="value" id="coins-left">0</span></span>
+    </div>
+    <canvas id="game" width="640" height="640"></canvas>
+    <div id="controls-info">Sterowanie: WASD lub strzalki. Wejdz w murek, aby go rozwalić.</div>
+
+    <!-- Math overlay -->
+    <div id="math-overlay">
+        <div id="math-box">
+            <h2>Rozwal murek!</h2>
+            <div id="math-question">2 + 2 = ?</div>
+            <input type="number" id="math-input" autofocus placeholder="?">
+            <div id="math-feedback"></div>
+            <div id="math-hint">Wpisz odpowiedź i naciśnij Enter</div>
+        </div>
+    </div>
+
+    <!-- Game Over overlay -->
+    <div id="game-over-overlay">
+        <div id="game-over-box">
+            <h2>PRZEGRANA!</h2>
+            <p style="color:#eee; font-size:1.1rem;">Potwór-pieniążek Cię złapał!</p>
+            <div id="game-over-score">Wynik: 0</div>
+            <button id="restart-btn">Zagraj ponownie</button>
+        </div>
+    </div>
+
+    <!-- Win overlay -->
+    <div id="win-overlay">
+        <div id="win-box">
+            <h2>WYGRANA!</h2>
+            <p style="color:#eee; font-size:1.1rem;">Zebrałeś wszystkie monety!</p>
+            <div id="win-score" style="font-size:1.4rem; color:#f7d94e; margin:10px 0;">Wynik: 0</div>
+            <button id="start-btn">Następny poziom</button>
+        </div>
+    </div>
+
+    <script>
+    // ============== GAME CONFIG ==============
+    const TILE = 64;
+    const COLS = 10;
+    const ROWS = 10;
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    canvas.width = COLS * TILE;
+    canvas.height = ROWS * TILE;
+
+    // ============== STATE ==============
+    let grid = [];       // 0=floor, 1=wall, 2=coin, 3=monster
+    let player = { x: 0, y: 0 };
+    let monsters = [];
+    let score = 0;
+    let bestScore = parseInt(localStorage.getItem('wygranaBeest') || '0');
+    let level = 1;
+    let gameRunning = false;
+    let mathTarget = null; // {x, y} wall being attacked
+    let mathAnswer = 0;
+    let monsterMoveTimer = 0;
+    let animFrame = 0;
+    let particles = [];
+    let shakeTimer = 0;
+    let coinsTotal = 0;
+    let coinsCollected = 0;
+
+    document.getElementById('best-score').textContent = bestScore;
+
+    // ============== LEVEL GENERATION ==============
+    function generateLevel() {
+        grid = [];
+        monsters = [];
+        particles = [];
+        coinsCollected = 0;
+        coinsTotal = 0;
+
+        for (let y = 0; y < ROWS; y++) {
+            grid[y] = [];
+            for (let x = 0; x < COLS; x++) {
+                grid[y][x] = 0;
+            }
+        }
+
+        // Place walls (more walls at higher levels)
+        const wallCount = Math.min(20 + level * 3, 50);
+        let placed = 0;
+        while (placed < wallCount) {
+            const x = Math.floor(Math.random() * COLS);
+            const y = Math.floor(Math.random() * ROWS);
+            if (x === 0 && y === 0) continue;
+            if (grid[y][x] !== 0) continue;
+            grid[y][x] = 1; // wall
+            placed++;
+        }
+
+        // Place coins behind some walls (mark as coin-wall)
+        const coinCount = Math.min(3 + level, 10);
+        let coinsPlaced = 0;
+        while (coinsPlaced < coinCount) {
+            const x = Math.floor(Math.random() * COLS);
+            const y = Math.floor(Math.random() * ROWS);
+            if (grid[y][x] !== 1) continue;
+            grid[y][x] = 2; // coin behind wall
+            coinsPlaced++;
+            coinsTotal++;
+        }
+
+        // Place monster behind some walls
+        const monsterCount = Math.min(1 + Math.floor(level / 2), 5);
+        let monstersPlaced = 0;
+        while (monstersPlaced < monsterCount) {
+            const x = Math.floor(Math.random() * COLS);
+            const y = Math.floor(Math.random() * ROWS);
+            if (grid[y][x] !== 1) continue;
+            grid[y][x] = 3; // monster behind wall
+            monstersPlaced++;
+        }
+
+        // Ensure player start is clear
+        grid[0][0] = 0;
+        player = { x: 0, y: 0 };
+
+        document.getElementById('coins-left').textContent = coinsTotal;
+        document.getElementById('level-display').textContent = level;
+    }
+
+    // ============== MATH PROBLEM ==============
+    function generateMathProblem() {
+        const ops = ['+', '-', '*'];
+        const op = ops[Math.floor(Math.random() * ops.length)];
+        let a, b, answer;
+
+        const maxNum = Math.min(5 + level * 2, 30);
+
+        switch (op) {
+            case '+':
+                a = Math.floor(Math.random() * maxNum) + 1;
+                b = Math.floor(Math.random() * maxNum) + 1;
+                answer = a + b;
+                break;
+            case '-':
+                a = Math.floor(Math.random() * maxNum) + 1;
+                b = Math.floor(Math.random() * a) + 1;
+                answer = a - b;
+                break;
+            case '*':
+                a = Math.floor(Math.random() * Math.min(maxNum, 12)) + 1;
+                b = Math.floor(Math.random() * Math.min(maxNum, 12)) + 1;
+                answer = a * b;
+                break;
+        }
+
+        return { question: `${a} ${op} ${b} = ?`, answer };
+    }
+
+    function showMathOverlay(wallX, wallY) {
+        mathTarget = { x: wallX, y: wallY };
+        const problem = generateMathProblem();
+        mathAnswer = problem.answer;
+
+        document.getElementById('math-question').textContent = problem.question;
+        document.getElementById('math-input').value = '';
+        document.getElementById('math-feedback').textContent = '';
+        document.getElementById('math-overlay').classList.add('active');
+
+        setTimeout(() => document.getElementById('math-input').focus(), 50);
+    }
+
+    function hideMathOverlay() {
+        document.getElementById('math-overlay').classList.remove('active');
+        mathTarget = null;
+        canvas.focus();
+    }
+
+    document.getElementById('math-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const val = parseInt(document.getElementById('math-input').value);
+            if (val === mathAnswer) {
+                breakWall(mathTarget.x, mathTarget.y);
+                hideMathOverlay();
+            } else {
+                document.getElementById('math-feedback').textContent = 'Źle! Spróbuj jeszcze raz.';
+                document.getElementById('math-feedback').style.color = '#e74c3c';
+                document.getElementById('math-input').value = '';
+                shakeTimer = 10;
+            }
+        }
+        if (e.key === 'Escape') {
+            hideMathOverlay();
+        }
+    });
+
+    // ============== WALL BREAKING ==============
+    function breakWall(wx, wy) {
+        const type = grid[wy][wx];
+
+        // Particles
+        for (let i = 0; i < 12; i++) {
+            particles.push({
+                x: wx * TILE + TILE / 2,
+                y: wy * TILE + TILE / 2,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                life: 30 + Math.random() * 20,
+                color: type === 2 ? '#f7d94e' : type === 3 ? '#e74c3c' : '#8b7355',
+                size: 3 + Math.random() * 4
+            });
+        }
+
+        if (type === 2) {
+            // Coin! Collect it
+            grid[wy][wx] = 0;
+            score += 10 * level;
+            coinsCollected++;
+            document.getElementById('score').textContent = score;
+            document.getElementById('coins-left').textContent = coinsTotal - coinsCollected;
+
+            // Check win
+            if (coinsCollected >= coinsTotal) {
+                winLevel();
+            }
+        } else if (type === 3) {
+            // Monster released!
+            grid[wy][wx] = 0;
+            monsters.push({ x: wx, y: wy, moveCD: 0 });
+        } else {
+            // Normal wall
+            grid[wy][wx] = 0;
+            score += 1;
+            document.getElementById('score').textContent = score;
+        }
+    }
+
+    // ============== MONSTER AI ==============
+    function moveMonsters() {
+        for (const m of monsters) {
+            m.moveCD--;
+            if (m.moveCD > 0) continue;
+            m.moveCD = Math.max(3, 8 - level); // Faster at higher levels
+
+            const dx = player.x - m.x;
+            const dy = player.y - m.y;
+
+            let mx = 0, my = 0;
+            if (Math.abs(dx) > Math.abs(dy)) {
+                mx = dx > 0 ? 1 : -1;
+            } else {
+                my = dy > 0 ? 1 : -1;
+            }
+
+            const nx = m.x + mx;
+            const ny = m.y + my;
+
+            if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && grid[ny][nx] === 0) {
+                m.x = nx;
+                m.y = ny;
+            }
+
+            // Check collision with player
+            if (m.x === player.x && m.y === player.y) {
+                gameOver();
+            }
+        }
+    }
+
+    // ============== GAME OVER / WIN ==============
+    function gameOver() {
+        gameRunning = false;
+        shakeTimer = 20;
+
+        if (score > bestScore) {
+            bestScore = score;
+            localStorage.setItem('wygranaBeest', bestScore);
+            document.getElementById('best-score').textContent = bestScore;
+        }
+
+        document.getElementById('game-over-score').textContent = `Wynik: ${score}`;
+        document.getElementById('game-over-overlay').classList.add('active');
+    }
+
+    function winLevel() {
+        gameRunning = false;
+        score += 50 * level; // Bonus
+        document.getElementById('score').textContent = score;
+
+        if (score > bestScore) {
+            bestScore = score;
+            localStorage.setItem('wygranaBeest', bestScore);
+            document.getElementById('best-score').textContent = bestScore;
+        }
+
+        document.getElementById('win-score').textContent = `Wynik: ${score} (bonus +${50 * level})`;
+        document.getElementById('win-overlay').classList.add('active');
+    }
+
+    document.getElementById('restart-btn').addEventListener('click', () => {
+        document.getElementById('game-over-overlay').classList.remove('active');
+        score = 0;
+        level = 1;
+        document.getElementById('score').textContent = score;
+        startGame();
+    });
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+        document.getElementById('win-overlay').classList.remove('active');
+        level++;
+        startGame();
+    });
+
+    function startGame() {
+        generateLevel();
+        gameRunning = true;
+    }
+
+    // ============== INPUT ==============
+    document.addEventListener('keydown', (e) => {
+        if (!gameRunning) return;
+        if (document.getElementById('math-overlay').classList.contains('active')) return;
+
+        let dx = 0, dy = 0;
+        switch (e.key) {
+            case 'ArrowUp': case 'w': case 'W': dy = -1; break;
+            case 'ArrowDown': case 's': case 'S': dy = 1; break;
+            case 'ArrowLeft': case 'a': case 'A': dx = -1; break;
+            case 'ArrowRight': case 'd': case 'D': dx = 1; break;
+            default: return;
+        }
+
+        e.preventDefault();
+        const nx = player.x + dx;
+        const ny = player.y + dy;
+
+        if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) return;
+
+        const tile = grid[ny][nx];
+        if (tile >= 1 && tile <= 3) {
+            // Hit a wall — show math
+            showMathOverlay(nx, ny);
+            return;
+        }
+
+        // Move player
+        player.x = nx;
+        player.y = ny;
+
+        // Check monster collision
+        for (const m of monsters) {
+            if (m.x === player.x && m.y === player.y) {
+                gameOver();
+                return;
+            }
+        }
+
+        // Move monsters after player moves
+        moveMonsters();
+    });
+
+    // ============== DRAWING ==============
+    function drawTile(x, y, type) {
+        const px = x * TILE;
+        const py = y * TILE;
+
+        if (type === 0) {
+            // Floor
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(px, py, TILE, TILE);
+            ctx.fillStyle = '#34495e';
+            ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
+        } else if (type === 1) {
+            // Wall (normal)
+            drawWall(px, py, '#8b7355', '#6b5335');
+        } else if (type === 2) {
+            // Wall with coin (looks the same as wall)
+            drawWall(px, py, '#8b7355', '#6b5335');
+            // Subtle sparkle
+            const sparkle = Math.sin(animFrame * 0.1 + x * 3 + y * 5) * 0.3 + 0.7;
+            ctx.fillStyle = `rgba(247, 217, 78, ${sparkle * 0.15})`;
+            ctx.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+        } else if (type === 3) {
+            // Wall with monster (looks the same)
+            drawWall(px, py, '#8b7355', '#6b5335');
+            // Subtle red glow
+            const glow = Math.sin(animFrame * 0.08 + x * 2 + y * 7) * 0.3 + 0.7;
+            ctx.fillStyle = `rgba(231, 76, 60, ${glow * 0.12})`;
+            ctx.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+        }
+    }
+
+    function drawWall(px, py, color1, color2) {
+        // Brick pattern
+        ctx.fillStyle = color2;
+        ctx.fillRect(px, py, TILE, TILE);
+
+        ctx.fillStyle = color1;
+        // Row 1
+        ctx.fillRect(px + 2, py + 2, TILE / 2 - 3, TILE / 4 - 2);
+        ctx.fillRect(px + TILE / 2 + 1, py + 2, TILE / 2 - 3, TILE / 4 - 2);
+        // Row 2 (offset)
+        ctx.fillRect(px + TILE / 4, py + TILE / 4 + 1, TILE / 2 - 2, TILE / 4 - 2);
+        ctx.fillRect(px + 2, py + TILE / 4 + 1, TILE / 4 - 3, TILE / 4 - 2);
+        ctx.fillRect(px + TILE * 3 / 4 - 1, py + TILE / 4 + 1, TILE / 4 - 1, TILE / 4 - 2);
+        // Row 3
+        ctx.fillRect(px + 2, py + TILE / 2 + 1, TILE / 2 - 3, TILE / 4 - 2);
+        ctx.fillRect(px + TILE / 2 + 1, py + TILE / 2 + 1, TILE / 2 - 3, TILE / 4 - 2);
+        // Row 4 (offset)
+        ctx.fillRect(px + TILE / 4, py + TILE * 3 / 4, TILE / 2 - 2, TILE / 4 - 2);
+        ctx.fillRect(px + 2, py + TILE * 3 / 4, TILE / 4 - 3, TILE / 4 - 2);
+        ctx.fillRect(px + TILE * 3 / 4 - 1, py + TILE * 3 / 4, TILE / 4 - 1, TILE / 4 - 2);
+    }
+
+    function drawPlayer(x, y) {
+        const px = x * TILE + TILE / 2;
+        const py = y * TILE + TILE / 2;
+        const bounce = Math.sin(animFrame * 0.15) * 2;
+
+        // Body
+        ctx.fillStyle = '#3498db';
+        ctx.beginPath();
+        ctx.arc(px, py - 4 + bounce, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(px - 7, py - 8 + bounce, 5, 0, Math.PI * 2);
+        ctx.arc(px + 7, py - 8 + bounce, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#2c3e50';
+        ctx.beginPath();
+        ctx.arc(px - 6, py - 8 + bounce, 2.5, 0, Math.PI * 2);
+        ctx.arc(px + 8, py - 8 + bounce, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Smile
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(px, py - 2 + bounce, 8, 0.1 * Math.PI, 0.9 * Math.PI);
+        ctx.stroke();
+
+        // Hard hat
+        ctx.fillStyle = '#f39c12';
+        ctx.beginPath();
+        ctx.ellipse(px, py - 18 + bounce, 20, 8, 0, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(px - 14, py - 20 + bounce, 28, 4);
+    }
+
+    function drawMonster(m) {
+        const px = m.x * TILE + TILE / 2;
+        const py = m.y * TILE + TILE / 2;
+        const wobble = Math.sin(animFrame * 0.2 + m.x) * 3;
+
+        // Money bag body
+        ctx.fillStyle = '#27ae60';
+        ctx.beginPath();
+        ctx.arc(px, py + 2 + wobble, 20, 0, Math.PI * 2);
+        ctx.fill();
+
+        // $ sign
+        ctx.fillStyle = '#f7d94e';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('$', px, py + 4 + wobble);
+
+        // Evil eyes
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(px - 8, py - 6 + wobble, 4, 0, Math.PI * 2);
+        ctx.arc(px + 8, py - 6 + wobble, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(px - 8, py - 6 + wobble, 2, 0, Math.PI * 2);
+        ctx.arc(px + 8, py - 6 + wobble, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Evil mouth
+        ctx.strokeStyle = '#c0392b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(px, py + 14 + wobble, 6, Math.PI, 0);
+        ctx.stroke();
+
+        // Red glow
+        const glowAlpha = 0.15 + Math.sin(animFrame * 0.1) * 0.1;
+        ctx.fillStyle = `rgba(231, 76, 60, ${glowAlpha})`;
+        ctx.beginPath();
+        ctx.arc(px, py + 2 + wobble, 28, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawParticles() {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.15;
+            p.life--;
+
+            if (p.life <= 0) {
+                particles.splice(i, 1);
+                continue;
+            }
+
+            ctx.globalAlpha = p.life / 50;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    function draw() {
+        animFrame++;
+
+        // Screen shake
+        let shakeX = 0, shakeY = 0;
+        if (shakeTimer > 0) {
+            shakeTimer--;
+            shakeX = (Math.random() - 0.5) * 8;
+            shakeY = (Math.random() - 0.5) * 8;
+        }
+
+        ctx.save();
+        ctx.translate(shakeX, shakeY);
+
+        // Draw grid
+        for (let y = 0; y < ROWS; y++) {
+            for (let x = 0; x < COLS; x++) {
+                drawTile(x, y, grid[y][x]);
+            }
+        }
+
+        // Draw monsters
+        for (const m of monsters) {
+            drawMonster(m);
+        }
+
+        // Draw player
+        drawPlayer(player.x, player.y);
+
+        // Draw particles
+        drawParticles();
+
+        ctx.restore();
+
+        requestAnimationFrame(draw);
+    }
+
+    // ============== START ==============
+    startGame();
+    draw();
+    </script>
+</body>
+</html>
